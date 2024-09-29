@@ -27,8 +27,8 @@ const getSplits = async (req, res) => {
     try {
         const { userId } = req.params;
         const splits = userId
-            ? await Split.find({ 'participants.user': userId }).populate('creator participants.user')
-            : await Split.find().populate('creator participants.user');
+            ? await Split.find({ 'participants.user': userId })
+            : await Split.find();
 
         res.status(200).json({
             message: 'Splits fetched successfully',
