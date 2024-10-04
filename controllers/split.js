@@ -7,7 +7,7 @@ const addSplit = async (req, res) => {
 
         // Iterate through participants to check if they are existing users or need to be created
         const updatedParticipants = await Promise.all(participants.map(async (participant) => {
-            const { phone, splitAmount } = participant;
+            const { phone, splitAmount, paid = false } = participant;
 
             // Check if the user with the given phone number already exists
             let user = await User.findOne({ phone });
@@ -25,11 +25,11 @@ const addSplit = async (req, res) => {
                 await user.save();
             }
 
-            // Return the participant information with the user ID
+            // Return the participant information with the user ID and paid status
             return {
                 user: user._id,       // The ID of the user (either existing or newly created)
                 splitAmount,          // Amount the user needs to pay
-                paid: false           // Set default paid status
+                paid                  // Set paid status (either from request or default to false)
             };
         }));
 
