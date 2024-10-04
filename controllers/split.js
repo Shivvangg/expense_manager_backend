@@ -1,16 +1,47 @@
 const Split = require('../models/split');  
-// const User = require("../models/user");
+const User = require('../models/user');  // Assuming you have the User model imported
 
 const addSplit = async (req, res) => {
     try {
         const { creatorId, totalAmount, participants } = req.body;
 
+        // Iterate through participants to check if they are existing users or need to be created
+        const updatedParticipants = await Promise.all(participants.map(async (participant) => {
+            const { phone, splitAmount } = participant;
+
+            // Check if the user with the given phone number already exists
+            let user = await User.findOne({ phone });
+
+            if (!user) {
+                // If user does not exist, create a new user with the default password
+                user = new User({
+                    email: `${phone}@example.com`,  // Temporary email as required
+                    username: `user_${phone}`,      // Temporary username based on phone
+                    phone,
+                    password: '123',               // Default password
+                });
+
+                // Save the new user to the database
+                await user.save();
+            }
+
+            // Return the participant information with the user ID
+            return {
+                user: user._id,       // The ID of the user (either existing or newly created)
+                splitAmount,          // Amount the user needs to pay
+                paid: false           // Set default paid status
+            };
+        }));
+
+        // Create a new split with the processed participants
         const newSplit = new Split({
             creatorId,
             totalAmount,
-            participants
+            participants: updatedParticipants
         });
+
         const savedSplit = await newSplit.save();
+
         res.status(201).json({
             message: 'Split added successfully',
             split: savedSplit
@@ -23,6 +54,7 @@ const addSplit = async (req, res) => {
     }
 };
 
+
 const getSplits = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -32,7 +64,7 @@ const getSplits = async (req, res) => {
 
         res.status(200).json({
             message: 'Splits fetched successfully',
-            splits
+            split: splits,
         });
     } catch (error) {
         res.status(500).json({
